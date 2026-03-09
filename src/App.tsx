@@ -46,8 +46,10 @@ export default function App() {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-emerald-800 text-xs text-emerald-400/60 text-center font-mono">
-          v1.0.0
+        <div className="p-4 border-t border-emerald-800 text-[10px] text-emerald-400/50 text-center font-mono leading-relaxed">
+          <div className="opacity-60 mb-1">v1.0.0</div>
+          <div>Proyecto PAI del SGR.</div>
+          <div>BPIN 202200010012.</div>
         </div>
       </aside>
 
@@ -71,6 +73,9 @@ export default function App() {
         </div>
 
         {/* Mobile Bottom Navigation */}
+        <div className="md:hidden bg-white border-t border-stone-100 px-4 py-1 text-[9px] text-stone-400 text-center font-mono">
+          Proyecto PAI del SGR. BPIN 202200010012.
+        </div>
         <nav className="md:hidden bg-white border-t border-stone-200 flex justify-around p-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-10">
           {tabs.map((tab) => {
             const Icon = tab.icon;
