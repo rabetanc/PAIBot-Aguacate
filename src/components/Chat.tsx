@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Image as ImageIcon, X, Loader2, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { generateChatResponse } from '../services/geminiService';
 
 export default function Chat({ initialMessage }: { initialMessage?: string }) {
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; image?: string }[]>([
@@ -39,9 +38,25 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
     setIsLoading(true);
 
     try {
-      const response = await generateChatResponse(history, textToSend, image || undefined);
-      setMessages(prev => [...prev, { role: 'model', text: response.text }]);
-      setHistory(response.history);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          history,
+          message: textToSend,
+          imageBase64: image || undefined
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+      setHistory(data.history);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', text: 'Error de conexión con la base de datos de Agrosavia. Por favor, intente nuevamente.' }]);
