@@ -112,22 +112,27 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
       setMessages(prev => [...prev, { role: 'model', text: data.text }]);
       setHistory(data.history);
     } catch (error) {
-      console.error(error);
-      // Fallback to offline mode if fetch fails
-      setIsOffline(true);
-      const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
-      setPendingMessages(newPending);
-      localStorage.setItem('paibot_pending', JSON.stringify(newPending));
-      
-      // Mark the last user message as pending
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastUserIdx = newMessages.map(m => m.role).lastIndexOf('user');
-        if (lastUserIdx !== -1) {
-          newMessages[lastUserIdx].isPending = true;
-        }
-        return newMessages;
-      });
+      console.error("Fetch error details:", error);
+      if (!navigator.onLine) {
+        // Fallback to offline mode ONLY if actually offline
+        setIsOffline(true);
+        const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
+        setPendingMessages(newPending);
+        localStorage.setItem('paibot_pending', JSON.stringify(newPending));
+        
+        // Mark the last user message as pending
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastUserIdx = newMessages.map(m => m.role).lastIndexOf('user');
+          if (lastUserIdx !== -1) {
+            newMessages[lastUserIdx].isPending = true;
+          }
+          return newMessages;
+        });
+      } else {
+        // If online but fetch failed (e.g. 500 server error)
+        setMessages(prev => [...prev, { role: 'model', text: 'Error de conexión con el servidor. Por favor, intente nuevamente.' }]);
+      }
     } finally {
       setIsLoading(false);
     }
