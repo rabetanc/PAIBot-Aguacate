@@ -1,21 +1,63 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Image as ImageIcon, X, Loader2, Bot, User } from 'lucide-react';
+import { Send, Mic, Image as ImageIcon, X, Loader2, Bot, User, WifiOff } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function Chat({ initialMessage }: { initialMessage?: string }) {
-  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; image?: string }[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string; image?: string; isPending?: boolean }[]>([
     { role: 'model', text: '¡Hola! Soy PAIbot-Aguacate 🥑. Ingeniero Agrónomo Senior especializado en el modelo productivo de Colombia. ¿En qué puedo ayudarte hoy en tu cultivo?' }
   ]);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [pendingMessages, setPendingMessages] = useState<{ text: string; image?: string }[]>([]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Keep track of raw history for Gemini
   const [history, setHistory] = useState<{ role: string; parts: any[] }[]>([]);
+
+  // Handle online/offline events and load pending messages
+  useEffect(() => {
+    const savedPending = localStorage.getItem('paibot_pending');
+    if (savedPending) {
+      setPendingMessages(JSON.parse(savedPending));
+    }
+
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-retry when coming back online
+  useEffect(() => {
+    if (!isOffline && pendingMessages.length > 0) {
+      processPendingMessages();
+    }
+  }, [isOffline]);
+
+  const processPendingMessages = async () => {
+    const messagesToProcess = [...pendingMessages];
+    setPendingMessages([]);
+    localStorage.removeItem('paibot_pending');
+
+    // Remove pending flags from UI
+    setMessages(prev => prev.map(m => ({ ...m, isPending: false })));
+
+    for (const msg of messagesToProcess) {
+      await handleSend(msg.text, msg.image, true);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,14 +69,26 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
     }
   }, [initialMessage]);
 
-  const handleSend = async (textOverride?: string) => {
+  const handleSend = async (textOverride?: string, imageOverride?: string | null, isRetry = false) => {
     const textToSend = textOverride || input;
-    if (!textToSend.trim() && !image) return;
+    const imageToSend = imageOverride !== undefined ? imageOverride : image;
 
-    const userMessage = { role: 'user' as const, text: textToSend, image: image || undefined };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setImage(null);
+    if (!textToSend.trim() && !imageToSend) return;
+
+    if (!isRetry) {
+      const userMessage = { role: 'user' as const, text: textToSend, image: imageToSend || undefined, isPending: isOffline };
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setImage(null);
+    }
+
+    if (isOffline) {
+      const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
+      setPendingMessages(newPending);
+      localStorage.setItem('paibot_pending', JSON.stringify(newPending));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -46,7 +100,7 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
         body: JSON.stringify({
           history,
           message: textToSend,
-          imageBase64: image || undefined
+          imageBase64: imageToSend || undefined
         })
       });
 
@@ -59,7 +113,21 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
       setHistory(data.history);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Error de conexión con la base de datos de Agrosavia. Por favor, intente nuevamente.' }]);
+      // Fallback to offline mode if fetch fails
+      setIsOffline(true);
+      const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
+      setPendingMessages(newPending);
+      localStorage.setItem('paibot_pending', JSON.stringify(newPending));
+      
+      // Mark the last user message as pending
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastUserIdx = newMessages.map(m => m.role).lastIndexOf('user');
+        if (lastUserIdx !== -1) {
+          newMessages[lastUserIdx].isPending = true;
+        }
+        return newMessages;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +176,14 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-stone-100">
+    <div className="flex flex-col h-full bg-stone-100 relative">
+      {isOffline && (
+        <div className="bg-amber-100 text-amber-800 px-4 py-2 text-xs font-medium flex items-center justify-center gap-2 shadow-sm z-10">
+          <WifiOff size={14} />
+          <span>Sin conexión. Los mensajes se guardarán localmente y se enviarán al recuperar la señal.</span>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -118,11 +193,12 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
               }`}>
                 {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
               </div>
-              <div className={`rounded-2xl px-4 py-3 shadow-sm ${
+              <div className={`rounded-2xl px-4 py-3 shadow-sm relative ${
                 msg.role === 'user' 
                   ? 'bg-emerald-600 text-white rounded-tr-none' 
                   : 'bg-white text-stone-800 rounded-tl-none border border-stone-200'
-              }`}>
+              } ${msg.isPending ? 'opacity-70' : ''}`}>
+                
                 {msg.image && (
                   <img src={msg.image} alt="Uploaded" className="max-w-full h-auto rounded-lg mb-2 max-h-48 object-cover" />
                 )}
@@ -131,11 +207,17 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
                   prose-a:text-emerald-600 prose-strong:text-emerald-800`}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                 </div>
+                
+                {msg.isPending && (
+                  <div className="absolute -bottom-5 right-0 text-[10px] text-amber-600 font-medium flex items-center gap-1">
+                    <WifiOff size={10} /> Guardado localmente
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && !isOffline && (
           <div className="flex justify-start">
             <div className="flex gap-3 max-w-[85%]">
               <div className="w-8 h-8 rounded-full bg-stone-800 text-emerald-400 flex items-center justify-center shrink-0">
@@ -189,7 +271,7 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
                   handleSend();
                 }
               }}
-              placeholder="Describa el síntoma o consulte sobre nutrición..."
+              placeholder={isOffline ? "Escriba su consulta (se guardará offline)..." : "Describa el síntoma o consulte sobre nutrición..."}
               className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[44px] resize-none text-sm"
               rows={1}
             />
@@ -204,8 +286,12 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
 
           <button 
             onClick={() => handleSend()}
-            disabled={!input.trim() && !image || isLoading}
-            className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 shadow-sm"
+            disabled={(!input.trim() && !image) || (isLoading && !isOffline)}
+            className={`p-3 text-white rounded-xl transition-colors shrink-0 shadow-sm ${
+              isOffline 
+                ? 'bg-amber-500 hover:bg-amber-600' 
+                : 'bg-emerald-600 hover:bg-emerald-700'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Send size={20} />
           </button>
