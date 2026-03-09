@@ -1,0 +1,5 @@
+{
+  "name": "PAIbot-Aguacate",
+  "description": "Sistema experto de la Plataforma de Agricultura Inteligente (PAI) diseñado para maximizar el rendimiento y la sostenibilidad del cultivo de aguacate en Colombia.",
+  "requestFramePermissions": ["microphone"]
+}
