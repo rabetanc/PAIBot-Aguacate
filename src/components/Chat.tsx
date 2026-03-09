@@ -76,17 +76,10 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
     if (!textToSend.trim() && !imageToSend) return;
 
     if (!isRetry) {
-      const userMessage = { role: 'user' as const, text: textToSend, image: imageToSend || undefined, isPending: isOffline };
+      const userMessage = { role: 'user' as const, text: textToSend, image: imageToSend || undefined, isPending: false };
       setMessages(prev => [...prev, userMessage]);
       setInput('');
       setImage(null);
-    }
-
-    if (isOffline) {
-      const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
-      setPendingMessages(newPending);
-      localStorage.setItem('paibot_pending', JSON.stringify(newPending));
-      return;
     }
 
     setIsLoading(true);
@@ -109,18 +102,30 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
       }
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+      
+      // If we succeed, we are definitely online
+      setIsOffline(false);
+      
+      setMessages(prev => {
+        // Remove pending flag from the last user message if it was a retry
+        const newMessages = [...prev];
+        const lastUserIdx = newMessages.map(m => m.role).lastIndexOf('user');
+        if (lastUserIdx !== -1) {
+          newMessages[lastUserIdx].isPending = false;
+        }
+        return [...newMessages, { role: 'model', text: data.text }];
+      });
       setHistory(data.history);
     } catch (error) {
       console.error("Fetch error details:", error);
+      
+      // If fetch fails, we might be offline or the server might be down
       if (!navigator.onLine) {
-        // Fallback to offline mode ONLY if actually offline
         setIsOffline(true);
         const newPending = [...pendingMessages, { text: textToSend, image: imageToSend || undefined }];
         setPendingMessages(newPending);
         localStorage.setItem('paibot_pending', JSON.stringify(newPending));
         
-        // Mark the last user message as pending
         setMessages(prev => {
           const newMessages = [...prev];
           const lastUserIdx = newMessages.map(m => m.role).lastIndexOf('user');
@@ -130,8 +135,8 @@ export default function Chat({ initialMessage }: { initialMessage?: string }) {
           return newMessages;
         });
       } else {
-        // If online but fetch failed (e.g. 500 server error)
-        setMessages(prev => [...prev, { role: 'model', text: 'Error de conexión con el servidor. Por favor, intente nuevamente.' }]);
+        setIsOffline(false); // Ensure offline banner is removed if we are actually online
+        setMessages(prev => [...prev, { role: 'model', text: 'Error de conexión con el servidor. Por favor, verifique que el backend esté funcionando (en Vercel, asegúrese de haber configurado la variable de entorno PAIBOT_API_KEY).' }]);
       }
     } finally {
       setIsLoading(false);
