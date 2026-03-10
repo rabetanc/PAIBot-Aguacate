@@ -10,10 +10,16 @@ export default function App() {
   const [visits, setVisits] = useState<number | null>(null);
 
   useEffect(() => {
-    // Usamos un servicio gratuito de contador de visitas
-    fetch('https://api.counterapi.dev/v1/paibot_sgr_bpin/visits')
+    // Usamos un servicio gratuito de contador de visitas (el /up al final hace que sume 1)
+    fetch('https://api.counterapi.dev/v1/paibot_sgr_bpin/visits/up')
       .then(res => res.json())
-      .then(data => setVisits(data.count))
+      .then(data => {
+        if (data.count) {
+          setVisits(data.count);
+        } else {
+          setVisits(20); // Fallback si la API no devuelve el count
+        }
+      })
       .catch(() => setVisits(20)); // Fallback en caso de error de red
   }, []);
 
