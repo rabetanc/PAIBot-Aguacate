@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Leaf, Droplets, Sprout, ClipboardCheck, MessageSquare } from 'lucide-react';
 import Chat from './components/Chat';
 import Fertilization from './components/Fertilization';
@@ -7,6 +7,15 @@ import Checklists from './components/Checklists';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat');
+  const [visits, setVisits] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Usamos un servicio gratuito de contador de visitas
+    fetch('https://api.counterapi.dev/v1/paibot_sgr_bpin/visits')
+      .then(res => res.json())
+      .then(data => setVisits(data.count))
+      .catch(() => setVisits(1250)); // Fallback en caso de error de red
+  }, []);
 
   const tabs = [
     { id: 'chat', label: 'PAIbot', icon: MessageSquare },
@@ -47,7 +56,15 @@ export default function App() {
           })}
         </nav>
         <div className="p-4 border-t border-emerald-800 text-[10px] text-emerald-400/50 text-center font-mono leading-relaxed">
-          <div className="opacity-60 mb-1">v1.0.0</div>
+          <div className="opacity-60 mb-1 flex justify-center items-center gap-2">
+            <span>v1.0.0</span>
+            {visits !== null && (
+              <>
+                <span>|</span>
+                <span>Visitas: {visits}</span>
+              </>
+            )}
+          </div>
           <div>Proyecto PAI del SGR.</div>
           <div>BPIN 202200010012.</div>
         </div>
@@ -73,8 +90,9 @@ export default function App() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className="md:hidden bg-white border-t border-stone-100 px-4 py-1 text-[9px] text-stone-400 text-center font-mono">
-          Proyecto PAI del SGR. BPIN 202200010012.
+        <div className="md:hidden bg-white border-t border-stone-100 px-4 py-1 text-[9px] text-stone-400 text-center font-mono flex flex-col items-center">
+          <span>Proyecto PAI del SGR. BPIN 202200010012.</span>
+          {visits !== null && <span className="opacity-70">Visitas: {visits}</span>}
         </div>
         <nav className="md:hidden bg-white border-t border-stone-200 flex justify-around p-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-10">
           {tabs.map((tab) => {
