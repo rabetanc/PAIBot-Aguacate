@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Leaf, Droplets, Sprout, ClipboardCheck, MessageSquare } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import Chat from './components/Chat';
 import Fertilization from './components/Fertilization';
 import Irrigation from './components/Irrigation';
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-stone-50 text-stone-900 font-sans">
+      <Analytics />
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-emerald-900 text-white shadow-xl">
         <div className="p-6">
