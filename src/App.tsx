@@ -14,7 +14,7 @@ export default function App() {
     fetch('https://api.counterapi.dev/v1/paibot_sgr_bpin/visits')
       .then(res => res.json())
       .then(data => setVisits(data.count))
-      .catch(() => setVisits(1250)); // Fallback en caso de error de red
+      .catch(() => setVisits(20)); // Fallback en caso de error de red
   }, []);
 
   const tabs = [
