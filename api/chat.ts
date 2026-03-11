@@ -92,11 +92,22 @@ export default async function handler(req: any, res: any) {
       }
     });
 
+    const modelResponseText = response.text;
+    let modelResponseImage = undefined;
+
+    // Extract image if the model generated one (e.g. if using tools or multimodal output)
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        modelResponseImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+
     res.status(200).json({
-      text: response.text,
+      text: modelResponseText,
+      image: modelResponseImage,
       history: [
         ...contents,
-        { role: "model", parts: [{ text: response.text }] }
+        { role: "model", parts: response.candidates?.[0]?.content?.parts || [] }
       ]
     });
   } catch (error: any) {
