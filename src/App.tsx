@@ -3,7 +3,6 @@ import { Leaf, Droplets, Sprout, ClipboardCheck, MessageSquare } from 'lucide-re
 import Chat from './components/Chat';
 import Fertilization from './components/Fertilization';
 import Irrigation from './components/Irrigation';
-import Checklists from './components/Checklists';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat');
@@ -28,7 +27,6 @@ export default function App() {
     { id: 'fert', label: 'Nutrición', icon: Leaf },
     { id: 'irrigation', label: 'Riego', icon: Droplets },
     { id: 'pruning', label: 'Podas', icon: Sprout },
-    { id: 'checklists', label: 'ICA 448', icon: ClipboardCheck },
   ];
 
   return (
@@ -92,7 +90,6 @@ export default function App() {
           {activeTab === 'fert' && <Fertilization />}
           {activeTab === 'irrigation' && <Irrigation />}
           {activeTab === 'pruning' && <Chat key="pruning" initialMessage="Necesito una guía técnica de podas para mi cultivo de aguacate Hass." />}
-          {activeTab === 'checklists' && <Checklists />}
         </div>
 
         {/* Mobile Bottom Navigation */}
