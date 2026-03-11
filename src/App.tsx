@@ -89,7 +89,7 @@ export default function App() {
           {activeTab === 'chat' && <Chat key="chat" />}
           {activeTab === 'fert' && <Fertilization />}
           {activeTab === 'irrigation' && <Irrigation />}
-          {activeTab === 'pruning' && <Chat key="pruning" initialMessage="Necesito una guía técnica de podas para mi cultivo de aguacate Hass." />}
+          {activeTab === 'pruning' && <Chat key="pruning" />}
         </div>
 
         {/* Mobile Bottom Navigation */}
