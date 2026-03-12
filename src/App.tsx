@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Leaf, Droplets, Sprout, ClipboardCheck, MessageSquare } from 'lucide-react';
+import { Leaf, Droplets, Sprout, ClipboardCheck, MessageSquare, Info } from 'lucide-react';
 import Chat from './components/Chat';
 import Fertilization from './components/Fertilization';
 import Irrigation from './components/Irrigation';
+import About from './components/About';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat');
@@ -27,18 +28,29 @@ export default function App() {
     { id: 'fert', label: 'Nutrición', icon: Leaf },
     { id: 'irrigation', label: 'Riego', icon: Droplets },
     { id: 'pruning', label: 'Podas', icon: Sprout },
+    { id: 'about', label: 'Acerca de', icon: Info },
   ];
 
   return (
     <div className="flex h-screen bg-stone-50 text-stone-900 font-sans">
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-emerald-900 text-white shadow-xl">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Leaf className="text-emerald-400" />
+        <div className="p-6 flex flex-col items-center text-center">
+          <div className="mb-4 bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+            <img 
+              src="/logo-pai.png" 
+              alt="Logo PAI" 
+              className="h-16 w-auto object-contain brightness-0 invert" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <Leaf className="text-emerald-400 mx-auto" size={32} id="fallback-logo" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">
             PAIbot
           </h1>
-          <p className="text-emerald-200 text-xs mt-1 font-mono">Aguacate Hass Col.</p>
+          <p className="text-emerald-200 text-[10px] mt-1 font-mono uppercase tracking-wider">Aguacate Hass Col.</p>
         </div>
         <nav className="flex-1 px-4 space-y-2">
           {tabs.map((tab) => {
@@ -78,11 +90,18 @@ export default function App() {
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Mobile Header */}
         <header className="md:hidden bg-emerald-900 text-white p-4 flex items-center justify-between shadow-md z-10">
-          <div className="flex items-center gap-2">
-            <Leaf className="text-emerald-400" size={24} />
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo-pai.png" 
+              alt="Logo PAI" 
+              className="h-8 w-auto brightness-0 invert"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
             <h1 className="text-xl font-bold">PAIbot</h1>
           </div>
-          <span className="text-xs bg-emerald-800 px-2 py-1 rounded-full font-mono">Hass Col.</span>
+          <span className="text-[10px] bg-emerald-800 px-2 py-1 rounded-full font-mono uppercase tracking-wider">Hass Col.</span>
         </header>
 
         <div className="flex-1 overflow-hidden bg-stone-100">
@@ -90,6 +109,7 @@ export default function App() {
           {activeTab === 'fert' && <Fertilization />}
           {activeTab === 'irrigation' && <Irrigation />}
           {activeTab === 'pruning' && <Chat key="pruning" />}
+          {activeTab === 'about' && <About />}
         </div>
 
         {/* Mobile Bottom Navigation */}
