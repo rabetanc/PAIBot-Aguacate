@@ -102,7 +102,7 @@ export default function About() {
             alt="Código QR PAI" 
             className="w-40 h-40 object-contain"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ais-pre-xsdrulatgqocdfcxnafcr7-47549712773.us-west1.run.app";
+              (e.target as HTMLImageElement).src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://proyecto-pai.info/&color=064e3b&bgcolor=ffffff&margin=10";
             }}
           />
         </div>
